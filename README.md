@@ -92,3 +92,22 @@ messenger.fire("Hello to the waiting thread");
 // using signals in OOP environments for quick cleanup.
 messenger.destroy();
 ```
+
+### Different number of arguments
+
+```ts
+// No args:
+const signal = new Signal<void>();
+signal.connect(() => {});
+signal.fire();
+
+// One arg:
+const signal = new Signal<number>();
+signal.connect((n) => print(n));
+signal.fire(32);
+
+// Multiple args:
+const signal = new Signal<[msg: string, value: number, cool: boolean]>();
+signal.connect((msg, value, cool) => print(msg, cool, value));
+signal.fire("hello", 10, true);
+```
