@@ -3,6 +3,15 @@ Beacon is a signal implementation for sending and receiving events.
 
 ## Signal API
 
+### Types
+```ts
+type SignalParams<T> = Parameters<
+	T extends unknown[] ? (...args: T) => never : T extends unknown ? (arg: T) => never : () => never
+>;
+
+type SignalCallback<T> = (...args: SignalParams<T>) => unknown;
+```
+
 ### Constructor
 ```ts
 const signal = new Signal<T>();
@@ -10,31 +19,31 @@ const signal = new Signal<T>();
 
 ### `Signal.connect`
 ```ts
-public connect(callback: (arg: T) => unknown): Connection<T>
+public connect(callback: SignalCallback<T>): Connection<T>
 ```
 Connects a callback, which will be called each time the signal is fired. The returned connection can be disconnected to stop receiving events.
 
 ### `Signal.connectOnce`
 ```ts
-public connectOnce(callback: (arg: T) => unknown): Connection<T>
+public connectOnce(callback: SignalCallback<T>): Connection<T>
 ```
 Same as `Signal.connect`, but disconnects itself after the first time it is triggered.
 
 ### `Signal.fire`
 ```ts
-public fire(event: T): void
+public fire(...args: SignalParams<T>): void
 ```
 Fires the signal with the given event. All connected callbacks will receive the event. Internally, this uses `task.spawn` to fire each callback.
 
 ### `Signal.fireDeferred`
 ```ts
-public fireDeferred(event: T): void
+public fireDeferred(...args: SignalParams<T>): void
 ```
 Same as `Signal.fire`, except uses `task.defer` internally.
 
 ### `Signal.wait`
 ```ts
-public wait(): T
+public wait(): LuaTuple<SignalParams<T>>
 ```
 Yields the calling thread until the signal is next fired. Returns the fired event.
 
