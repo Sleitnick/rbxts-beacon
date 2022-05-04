@@ -1,25 +1,14 @@
-let freeRunnerThread: thread | undefined = undefined;
+import { runnerThread } from "./runnerThread";
 
-function acquireRunnerThreadAndCallEventHandler<T>(fn: Callback, arg: T) {
-	const acquireRunnerThread = freeRunnerThread;
-	freeRunnerThread = undefined;
-	fn(arg);
-	freeRunnerThread = acquireRunnerThread;
-}
-
-function runEventHandlerInFreeThread<T>(fn: Callback, arg: T) {
-	acquireRunnerThreadAndCallEventHandler<T>(fn, arg);
-	// eslint-disable-next-line no-constant-condition
-	while (true) {
-		const res = coroutine.yield() as LuaTuple<[Callback, T]>;
-		acquireRunnerThreadAndCallEventHandler(res[0], res[1]);
-	}
-}
+export type SignalParams<T> = Parameters<
+	T extends unknown[] ? (...args: T) => never : T extends unknown ? (arg: T) => never : () => never
+>;
+export type SignalCallback<T> = (...args: SignalParams<T>) => unknown;
 
 class Connection<T> {
 	public connected: boolean;
-	public _next?: Connection<T>;
-	constructor(private signal: Signal<T>, public _fn: Callback) {
+	_next?: Connection<T>;
+	constructor(private signal: Signal<T>, public _fn: SignalCallback<T>) {
 		this.connected = true;
 	}
 	public disconnect() {
@@ -39,12 +28,12 @@ class Connection<T> {
 	}
 }
 
-export class Signal<T> {
+export class Signal<T extends unknown[] | unknown> {
 	private waitingThreads = new Set<thread>();
 
 	_handlerListHead?: Connection<T> = undefined;
 
-	public connect(callback: (event: T) => unknown): Connection<T> {
+	public connect(callback: SignalCallback<T>): Connection<T> {
 		const connection = new Connection(this, callback);
 		if (this._handlerListHead !== undefined) {
 			connection._next = this._handlerListHead;
@@ -53,52 +42,49 @@ export class Signal<T> {
 		return connection;
 	}
 
-	public connectOnce(callback: (event: T) => unknown): Connection<T> {
+	public connectOnce(callback: SignalCallback<T>): Connection<T> {
 		let done = false;
-		const c = this.connect((event: T) => {
+		const c = this.connect((...args) => {
 			if (done) return;
 			done = true;
 			c.disconnect();
-			callback(event);
+			callback(...args);
 		});
 		return c;
 	}
 
-	public fire(event: T) {
+	public fire(...args: SignalParams<T>) {
 		let item = this._handlerListHead;
 		while (item) {
 			if (item.connected) {
-				if (!freeRunnerThread) {
-					freeRunnerThread = coroutine.create(runEventHandlerInFreeThread);
-				}
-				task.spawn(freeRunnerThread, item._fn, event);
+				runnerThread(item._fn, ...args);
 			}
 			item = item._next;
 		}
 	}
 
-	public fireDeferred(event: T) {
+	public fireDeferred(...args: SignalParams<T>) {
 		let item = this._handlerListHead;
 		while (item) {
 			if (item.connected) {
-				task.defer(item._fn, event);
+				task.defer(item._fn, ...args);
 			}
 			item = item._next;
 		}
 	}
 
-	public wait(): T {
+	public wait(): LuaTuple<SignalParams<T>> {
 		const running = coroutine.running();
 		this.waitingThreads.add(running);
 		let done = false;
-		const c = this.connect((event: T) => {
+		const c = this.connect((...args) => {
 			if (done) return;
 			done = true;
 			c.disconnect();
 			this.waitingThreads.delete(running);
-			task.spawn(running, [event] as LuaTuple<[T]>);
+			task.spawn(running, ...args);
 		});
-		return (coroutine.yield() as LuaTuple<[T]>)[0];
+		return coroutine.yield() as LuaTuple<SignalParams<T>>;
 	}
 
 	public disconnectAll() {

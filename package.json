@@ -1,6 +1,6 @@
 {
   "name": "@rbxts/beacon",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Beacon is a signal implementation for sending and receiving events",
   "main": "out/init.lua",
   "scripts": {
@@ -9,8 +9,9 @@
     "prepublishOnly": "npm run build"
   },
   "keywords": ["signal", "rbxscriptsignal", "connection", "rbxscriptconnection"],
-  "author": "",
-  "license": "ISC",
+  "author": "sleitnick",
+  "repository": "github:Sleitnick/rbxts-beacon",
+  "license": "MIT",
   "types": "out/index.d.ts",
   "files": [
     "out",
