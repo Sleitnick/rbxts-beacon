@@ -4,12 +4,33 @@ export type SignalParams<T> = Parameters<
 export type SignalCallback<T> = (...args: SignalParams<T>) => unknown;
 export type SignalWait<T> = T extends unknown[] ? LuaTuple<T> : T;
 
+/**
+ * Represents a connection to a signal.
+ */
 class Connection<T> {
-	public connected: boolean;
+	/**
+	 * Whether or not the connection is connected.
+	 * @readonly
+	 */
+	public connected = true;
+
+	/**
+	 * @hidden
+	 */
 	_next?: Connection<T>;
-	constructor(private signal: Signal<T>, public _fn: SignalCallback<T>) {
-		this.connected = true;
+
+	/**
+	 * @hidden
+	 */
+	_fn: SignalCallback<T>;
+
+	constructor(private signal: Signal<T>, /** @hidden */ fn: SignalCallback<T>) {
+		this._fn = fn;
 	}
+
+	/**
+	 * Disconnects the connection.
+	 */
 	public disconnect() {
 		if (!this.connected) return;
 		this.connected = false;
@@ -27,11 +48,23 @@ class Connection<T> {
 	}
 }
 
+/**
+ * Signals allow events to be dispatched to any number of listeners.
+ */
 export class Signal<T extends unknown[] | unknown> {
 	private waitingThreads = new Set<thread>();
 
+	/**
+	 * @hidden
+	 */
 	_handlerListHead?: Connection<T> = undefined;
 
+	/**
+	 * Connects a callback. This callback will be fired when the signal
+	 * is fired and will receive the arguments passed through firing.
+	 * @param callback `SignalCallback<T>`
+	 * @returns `Connection<T>`
+	 */
 	public connect(callback: SignalCallback<T>): Connection<T> {
 		const connection = new Connection(this, callback);
 		if (this._handlerListHead !== undefined) {
@@ -41,6 +74,12 @@ export class Signal<T extends unknown[] | unknown> {
 		return connection;
 	}
 
+	/**
+	 * Connects a callback, which will be disconnected after the next time
+	 * the signal is fired.
+	 * @param callback `SignalCallback<T>`
+	 * @returns `Connection<T>`
+	 */
 	public connectOnce(callback: SignalCallback<T>): Connection<T> {
 		let done = false;
 		const c = this.connect((...args) => {
@@ -52,6 +91,12 @@ export class Signal<T extends unknown[] | unknown> {
 		return c;
 	}
 
+	/**
+	 * Fires the signal. The passed arguments will be sent along to all
+	 * connected callbacks. Callbacks are invoked using `task.spawn`
+	 * internally.
+	 * @param args
+	 */
 	public fire(...args: SignalParams<T>) {
 		let item = this._handlerListHead;
 		while (item) {
@@ -62,6 +107,12 @@ export class Signal<T extends unknown[] | unknown> {
 		}
 	}
 
+	/**
+	 * Fires the signal. The passed arguments will be sent along to all
+	 * connected callbacks. Callbacks are invoked using `task.defer`
+	 * internally.
+	 * @param args
+	 */
 	public fireDeferred(...args: SignalParams<T>) {
 		let item = this._handlerListHead;
 		while (item) {
@@ -72,20 +123,25 @@ export class Signal<T extends unknown[] | unknown> {
 		}
 	}
 
+	/**
+	 * Yields the current thread until the next time the signal is fired.
+	 * The arguments from firing are returned.
+	 * @yields
+	 * @returns `SignalWait<T>`
+	 */
 	public wait(): SignalWait<T> {
 		const running = coroutine.running();
 		this.waitingThreads.add(running);
-		let done = false;
-		const c = this.connect((...args) => {
-			if (done) return;
-			done = true;
-			c.disconnect();
+		this.connectOnce((...args) => {
 			this.waitingThreads.delete(running);
 			task.spawn(running, ...args);
 		});
 		return coroutine.yield() as SignalWait<T>;
 	}
 
+	/**
+	 * Disconnects all connections on the signal.
+	 */
 	public disconnectAll() {
 		let item = this._handlerListHead;
 		while (item) {
@@ -97,6 +153,9 @@ export class Signal<T extends unknown[] | unknown> {
 		this.waitingThreads.clear();
 	}
 
+	/**
+	 * Alias for `disconnectAll`.
+	 */
 	public destroy() {
 		this.disconnectAll();
 	}
