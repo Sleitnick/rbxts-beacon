@@ -1,9 +1,8 @@
-import { runnerThread } from "./runnerThread";
-
 export type SignalParams<T> = Parameters<
 	T extends unknown[] ? (...args: T) => never : T extends unknown ? (arg: T) => never : () => never
 >;
 export type SignalCallback<T> = (...args: SignalParams<T>) => unknown;
+export type SignalWait<T> = T extends unknown[] ? LuaTuple<T> : T;
 
 class Connection<T> {
 	public connected: boolean;
@@ -57,7 +56,7 @@ export class Signal<T extends unknown[] | unknown> {
 		let item = this._handlerListHead;
 		while (item) {
 			if (item.connected) {
-				runnerThread(item._fn, ...args);
+				task.spawn(item._fn, ...args);
 			}
 			item = item._next;
 		}
@@ -73,7 +72,7 @@ export class Signal<T extends unknown[] | unknown> {
 		}
 	}
 
-	public wait(): LuaTuple<SignalParams<T>> {
+	public wait(): SignalWait<T> {
 		const running = coroutine.running();
 		this.waitingThreads.add(running);
 		let done = false;
@@ -84,7 +83,7 @@ export class Signal<T extends unknown[] | unknown> {
 			this.waitingThreads.delete(running);
 			task.spawn(running, ...args);
 		});
-		return coroutine.yield() as LuaTuple<SignalParams<T>>;
+		return coroutine.yield() as SignalWait<T>;
 	}
 
 	public disconnectAll() {

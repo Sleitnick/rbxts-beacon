@@ -115,6 +115,11 @@ const signal = new Signal<number>();
 signal.connect((n) => print(n));
 signal.fire(32);
 
+// One arg, named (preferred over the above):
+const signal = new Signal<[points: number]>();
+signal.connect((points) => print(points));
+signal.fire(64);
+
 // Multiple args:
 const signal = new Signal<[msg: string, value: number, cool: boolean]>();
 signal.connect((msg, value, cool) => print(msg, cool, value));
