@@ -10,6 +10,8 @@ type SignalParams<T> = Parameters<
 >;
 
 type SignalCallback<T> = (...args: SignalParams<T>) => unknown;
+
+type SignalWait<T> = T extends unknown[] ? LuaTuple<T> : T;
 ```
 
 ### Constructor
