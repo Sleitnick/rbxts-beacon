@@ -45,7 +45,7 @@ Same as `Signal.fire`, except uses `task.defer` internally.
 
 ### `Signal.wait`
 ```ts
-public wait(): LuaTuple<SignalParams<T>>
+public wait(): SignalWait<T>
 ```
 Yields the calling thread until the signal is next fired. Returns the fired event.
 
