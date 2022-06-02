@@ -7,7 +7,7 @@ export type SignalWait<T> = T extends unknown[] ? LuaTuple<T> : T;
 /**
  * Represents a connection to a signal.
  */
-class Connection<T> {
+export class Connection<T> {
 	/**
 	 * Whether or not the connection is connected.
 	 * @readonly
