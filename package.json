@@ -1,6 +1,6 @@
 {
   "name": "@rbxts/beacon",
-  "version": "1.2.1",
+  "version": "2.0.0",
   "description": "Beacon is a signal implementation for sending and receiving events",
   "main": "out/init.lua",
   "scripts": {
