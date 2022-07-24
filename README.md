@@ -19,59 +19,59 @@ type SignalWait<T> = T extends unknown[] ? LuaTuple<T> : T;
 const signal = new Signal<T>();
 ```
 
-### `Signal.connect`
+### `Signal.Connect`
 ```ts
-public connect(callback: SignalCallback<T>): Connection<T>
+public Connect(callback: SignalCallback<T>): Connection<T>
 ```
 Connects a callback, which will be called each time the signal is fired. The returned connection can be disconnected to stop receiving events.
 
-### `Signal.connectOnce`
+### `Signal.Once`
 ```ts
-public connectOnce(callback: SignalCallback<T>): Connection<T>
+public Once(callback: SignalCallback<T>): Connection<T>
 ```
-Same as `Signal.connect`, but disconnects itself after the first time it is triggered.
+Same as `Signal.Connect`, but disconnects itself after the first time it is triggered.
 
-### `Signal.fire`
+### `Signal.Fire`
 ```ts
-public fire(...args: SignalParams<T>): void
+public Fire(...args: SignalParams<T>): void
 ```
 Fires the signal with the given event. All connected callbacks will receive the event. Internally, this uses `task.spawn` to fire each callback.
 
-### `Signal.fireDeferred`
+### `Signal.FireDeferred`
 ```ts
-public fireDeferred(...args: SignalParams<T>): void
+public FireDeferred(...args: SignalParams<T>): void
 ```
-Same as `Signal.fire`, except uses `task.defer` internally.
+Same as `Signal.Fire`, except uses `task.defer` internally.
 
-### `Signal.wait`
+### `Signal.Wait`
 ```ts
-public wait(): SignalWait<T>
+public Wait(): SignalWait<T>
 ```
 Yields the calling thread until the signal is next fired. Returns the fired event.
 
-### `Signal.disconnectAll`
+### `Signal.DisconnectAll`
 ```ts
-public disconnectAll(): void
+public DisconnectAll(): void
 ```
 Disconnects all connections on the signal.
 
-### `Signal.destroy`
+### `Signal.Destroy`
 ```ts
-public destroy(): void
+public Destroy(): void
 ```
-Alias for `Signal.disconnectAll`.
+Alias for `Signal.DisconnectAll`.
 
 ## Connection API
 
-### `Connection.connected`
+### `Connection.Connected`
 ```ts
-public connected: boolean
+public Connected: boolean
 ```
 Indicates if the connection is currently connected.
 
-### `Connection.disconnect`
+### `Connection.Disconnect`
 ```ts
-public disconnect(): void
+public Disconnect(): void
 ```
 Disconnects the connection.
 
@@ -80,28 +80,28 @@ Disconnects the connection.
 ```ts
 const messenger = new Signal<string>();
 
-const connection = messenger.connect((msg) => {
+const connection = messenger.Connect((msg) => {
 	print(`Got message: ${msg}`);
 });
 
-messenger.fire("Hello world!");
-connection.disconnect();
-messenger.fire("No one will see this");
+messenger.Fire("Hello world!");
+connection.Disconnect();
+messenger.Fire("No one will see this");
 
 // The spawned thread will wait indefinitely until the
 // signal is fired. If all connections are disconnected
-// using signal.destroy() or signal.disconnectAll(), then
+// using signal.Destroy() or signal.DisconnectAll(), then
 // the waiting thread will be closed.
 task.spawn(() => {
-	const msg = messenger.wait();
+	const msg = messenger.Wait();
 	print(`Got message from waiting: ${msg}`);
 });
 task.wait(2);
-messenger.fire("Hello to the waiting thread");
+messenger.Fire("Hello to the waiting thread");
 
 // Destroying isn't necessary for cleanup, but is nice when
 // using signals in OOP environments for quick cleanup.
-messenger.destroy();
+messenger.Destroy();
 ```
 
 ### Different number of arguments
@@ -109,21 +109,21 @@ messenger.destroy();
 ```ts
 // No args:
 const signal = new Signal<void>();
-signal.connect(() => {});
-signal.fire();
+signal.Connect(() => {});
+signal.Fire();
 
 // One arg:
 const signal = new Signal<number>();
-signal.connect((n) => print(n));
-signal.fire(32);
+signal.Connect((n) => print(n));
+signal.Fire(32);
 
 // One arg, named (preferred over the above):
 const signal = new Signal<[points: number]>();
-signal.connect((points) => print(points));
-signal.fire(64);
+signal.Connect((points) => print(points));
+signal.Fire(64);
 
 // Multiple args:
 const signal = new Signal<[msg: string, value: number, cool: boolean]>();
-signal.connect((msg, value, cool) => print(msg, cool, value));
-signal.fire("hello", 10, true);
+signal.Connect((msg, value, cool) => print(msg, cool, value));
+signal.Fire("hello", 10, true);
 ```

@@ -12,7 +12,7 @@ export class Connection<T> {
 	 * Whether or not the connection is connected.
 	 * @readonly
 	 */
-	public connected = true;
+	public Connected = true;
 
 	/**
 	 * @hidden
@@ -31,9 +31,9 @@ export class Connection<T> {
 	/**
 	 * Disconnects the connection.
 	 */
-	public disconnect() {
-		if (!this.connected) return;
-		this.connected = false;
+	public Disconnect() {
+		if (!this.Connected) return;
+		this.Connected = false;
 		if (this.signal._handlerListHead === this) {
 			this.signal._handlerListHead = this._next;
 		} else {
@@ -65,7 +65,7 @@ export class Signal<T extends unknown[] | unknown> {
 	 * @param callback `SignalCallback<T>`
 	 * @returns `Connection<T>`
 	 */
-	public connect(callback: SignalCallback<T>): Connection<T> {
+	public Connect(callback: SignalCallback<T>): Connection<T> {
 		const connection = new Connection(this, callback);
 		if (this._handlerListHead !== undefined) {
 			connection._next = this._handlerListHead;
@@ -80,12 +80,12 @@ export class Signal<T extends unknown[] | unknown> {
 	 * @param callback `SignalCallback<T>`
 	 * @returns `Connection<T>`
 	 */
-	public connectOnce(callback: SignalCallback<T>): Connection<T> {
+	public Once(callback: SignalCallback<T>): Connection<T> {
 		let done = false;
-		const c = this.connect((...args) => {
+		const c = this.Connect((...args) => {
 			if (done) return;
 			done = true;
-			c.disconnect();
+			c.Disconnect();
 			callback(...args);
 		});
 		return c;
@@ -97,10 +97,10 @@ export class Signal<T extends unknown[] | unknown> {
 	 * internally.
 	 * @param args
 	 */
-	public fire(...args: SignalParams<T>) {
+	public Fire(...args: SignalParams<T>) {
 		let item = this._handlerListHead;
 		while (item) {
-			if (item.connected) {
+			if (item.Connected) {
 				task.spawn(item._fn, ...args);
 			}
 			item = item._next;
@@ -113,10 +113,10 @@ export class Signal<T extends unknown[] | unknown> {
 	 * internally.
 	 * @param args
 	 */
-	public fireDeferred(...args: SignalParams<T>) {
+	public FireDeferred(...args: SignalParams<T>) {
 		let item = this._handlerListHead;
 		while (item) {
-			if (item.connected) {
+			if (item.Connected) {
 				task.defer(item._fn, ...args);
 			}
 			item = item._next;
@@ -129,10 +129,10 @@ export class Signal<T extends unknown[] | unknown> {
 	 * @yields
 	 * @returns `SignalWait<T>`
 	 */
-	public wait(): SignalWait<T> {
+	public Wait(): SignalWait<T> {
 		const running = coroutine.running();
 		this.waitingThreads.add(running);
-		this.connectOnce((...args) => {
+		this.Once((...args) => {
 			this.waitingThreads.delete(running);
 			task.spawn(running, ...args);
 		});
@@ -142,10 +142,10 @@ export class Signal<T extends unknown[] | unknown> {
 	/**
 	 * Disconnects all connections on the signal.
 	 */
-	public disconnectAll() {
+	public DisconnectAll() {
 		let item = this._handlerListHead;
 		while (item) {
-			item.connected = false;
+			item.Connected = false;
 			item = item._next;
 		}
 		this._handlerListHead = undefined;
@@ -154,9 +154,9 @@ export class Signal<T extends unknown[] | unknown> {
 	}
 
 	/**
-	 * Alias for `disconnectAll`.
+	 * Alias for `DisconnectAll`.
 	 */
-	public destroy() {
-		this.disconnectAll();
+	public Destroy() {
+		this.DisconnectAll();
 	}
 }
