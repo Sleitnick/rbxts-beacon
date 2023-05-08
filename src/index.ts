@@ -46,6 +46,13 @@ export class Connection<T> {
 			}
 		}
 	}
+
+	/**
+	 * Alias for `Disconnect`.
+	 */
+	public Destroy() {
+		this.Disconnect();
+	}
 }
 
 /**

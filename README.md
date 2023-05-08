@@ -75,6 +75,12 @@ public Disconnect(): void
 ```
 Disconnects the connection.
 
+### `Connection.Destroy`
+```ts
+public Destroy(): void
+```
+Alias for `Connection.Disconnect`.
+
 ## Example
 
 ```ts
